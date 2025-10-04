@@ -1,0 +1,60 @@
+[
+  {
+    "bggName": "Paradice",
+    "filters": [
+      {
+        "displayText": "JO&JOE Offenes Regal",
+        "filterString": "JJ1"
+      },
+      {
+        "displayText": "JO&JOE Offenes Regal",
+        "filterString": "1"
+      },
+      {
+        "displayText": "JO&JOE Offenes Regal",
+        "filterString": "2"
+      },
+      {
+        "displayText": "JO&JOE Regal im 6. Stock",
+        "filterString": "JJ2"
+      },
+      {
+        "displayText": "JO&JOE Regal im 6. Stock",
+        "filterString": "3"
+      },
+      {
+        "displayText": "Paradice im Zweiten",
+        "filterString": "Paradice im Zweiten"
+      },
+      {
+        "displayText": "Paradice am See",
+        "filterString": "Paradice am See"
+      },
+      {
+        "displayText": "Gleis//Garten offenes Regal",
+        "filterString": "GG1"
+      },
+      {
+        "displayText": "Gleis//Garten verschlossenes Regal",
+        "filterString": "GG2"
+      },
+      {
+        "displayText": "Superbude offenes Regal",
+        "filterString": "S1"
+      },
+      {
+        "displayText": "Superbude verschlossenes Regal",
+        "filterString": "S2"
+      }
+    ]
+  },
+  {
+    "bggName": "ParadiceamSee",
+    "filters": [
+      {
+        "displayText": "Paradice am See",
+        "filterString": ""
+      }
+    ]
+  }
+]
