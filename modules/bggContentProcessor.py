@@ -1,6 +1,8 @@
 import json
 from typing import List
 from glom import glom
+
+from .data.filterReference import FilterReference
 from .data.game import Game
 
 
@@ -47,15 +49,12 @@ class ContentProcessor:
 
                 game = Game(game_id=item["@objectid"],
                             game_name=glom(item, "name.#text"),
-                            game_rating=glom(item, "stats.rating.bayesaverage.@value"),
+                            game_rating=float(glom(item, "stats.rating.bayesaverage.@value")),
                             game_location=game_location,
-                            game_min_players=min_players,
-                            game_max_players=statistics["@maxplayers"],
+                            game_min_players=int(min_players),
+                            game_max_players=int(statistics["@maxplayers"]),
                             game_thumbnail=thumbnail,
                             game_languages=languages)
-
-                # yearpublished => group
-                # play_time (categories)
 
                 # per default only "version" entries have weight
                 # Derive values based on categories
@@ -68,20 +67,73 @@ class ContentProcessor:
                     processed_game_list.append(game)
         return processed_game_list
 
-
+    """
+    This method takes all the poll results and evaluates them. As for all other values, the results are put in a range
+    from 2 to -2. In this particular case, the processing not obvious. The representation is as follows:
+    2: No necessary in-game text
+    1: Some necessary text - easily memorized or small crib sheet
+    0: Moderate in-game text - needs crib sheet or paste ups
+    -1: Extensive use of text - massive conversion needed to be playable
+    -2: Unplayable in another language
+    The number that is mapped to the category with the most upvotes will be returned.
+    """
     @staticmethod
     def _get_language_dependency(poll_results):
         result_dict = { }
+        iteration = 0
         for poll_result in poll_results['result']:
-            result_dict[poll_result['@level']] = int(poll_result['@numvotes'])
-        return max(result_dict, key=result_dict.get)
+            result_dict[str(2 - iteration)] = int(poll_result['@numvotes'])
+            iteration+=1
+        if max(result_dict.values()) <= 0:
+            return 99
+        else:
+            return max(result_dict, key=result_dict.get)
 
+    """
+    This method iterates through the community voting of "Best", "Recommended" and "Not Recommended" number of players
+    for the game in question. If around 2/3 of the community are in favor of the player number, the number is added
+    to the array of recommendations for the number of players for this particular game. 
+    """
     @staticmethod
-    def _get_recommended_player_numbers(player_number_votings):
+    def _get_recommended_player_numbers(player_number_votings, min_players: int, max_players: int):
         recommended_player_numbers = []
-        for entry in player_number_votings['result']:
-            # todo
-            recommended_player_numbers.append('42')
+        for entry in player_number_votings:
+            for number in range(min_players, max_players+1):
+                if entry['@numplayers'] == str(number):
+                    best = 0
+                    recommended = 0
+                    avoid = 0
+                    for result in entry['result']:
+                        if result['@value'] == 'Best':
+                            best = int(result['@numvotes'])
+                        elif result['@value'] == 'Recommended':
+                            recommended = int(result['@numvotes'])
+                        else:
+                            avoid = int(result['@numvotes'])
+                    if best + recommended >= 2 * avoid:
+                        recommended_player_numbers.append(number)
+        return recommended_player_numbers
+
+
+    """
+    This method processes all relevant filters regarding game mechanics as well as game themes.
+    It receives all relevant filter values that are connected to the games and compares them to
+    predefined filter categories that are defined in the respective JSON files (config directory).
+    """
+    # todo: check if theme strings are different and/or maybe the JSON content are substrings
+    @staticmethod
+    def _get_applicable_filters(game_links, available_filters: List[FilterReference]):
+        applicable_categories = []
+        for link in game_links:
+            for filter_item in available_filters:
+                matches = 0
+                for selector in filter_item.selectors:
+                    if link['@value'] == selector:
+                        matches += 1
+                if matches == len(filter_item.selectors):
+                    applicable_categories.append(filter_item.category)
+        return applicable_categories
+
 
     '''
     Batch information has been requested for a number of games. This information is now parsed
@@ -89,7 +141,8 @@ class ContentProcessor:
     away to avoid using too much memory. Every batch of game details is processed right away to
     free up resources for the next batch.
     '''
-    def enrich_bulk_information(self, games: List[Game], bulk_infos):
+    def enrich_bulk_information(self, games: List[Game], bulk_infos,
+                                gameMechanics: List[FilterReference], gameThemes: List[FilterReference]):
         for game in games: # might have to iterate via index
             for item in glom(bulk_infos, self.root_keys):
                 if game.id == item['@id']:
@@ -104,12 +157,15 @@ class ContentProcessor:
                         elif poll_data['@name'] == 'suggested_numplayers':
                             player_number_poll = poll_data['results']
                     game.language_dependency_group = self._get_language_dependency(language_poll)
-                    # todo: take care of the attribute/setter inside the game class
-                    self._get_recommended_player_numbers(player_number_poll)
+                    game.set_recommended_player_numbers(self._get_recommended_player_numbers(player_number_poll, game.min_players, game.max_players))
                     game.set_cooperative_indicator(-1)
                     for reference in item['link']:
                         if reference['@value'] == 'Cooperative Game':
                             game.set_cooperative_indicator(1)
                         elif reference['@value'] == 'Semi-Cooperative Game' or reference['@value'] == 'Team-Based Game':
                             game.set_cooperative_indicator(0)
+                    game.set_game_mechanics(self._get_applicable_filters(item['link'], gameMechanics))
+                    game.set_game_themes(self._get_applicable_filters(item['link'], gameThemes))
+                    if 'description' in item:
+                        game.descriptions.update(EN=item['description'])
         return games

@@ -2,3 +2,6 @@ requests
 xmltodict
 simplejson
 glom
+deepl
+openai
+flask

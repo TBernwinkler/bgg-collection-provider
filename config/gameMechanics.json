@@ -1,0 +1,129 @@
+[
+  {
+    "category": "action",
+    "selectors": [
+      "Real-Time",
+      "Real-time",
+      "Action / Dexterity",
+      "Flicking",
+      "Stacking and Balancing"
+    ]
+  },
+  {
+    "category": "areaControl",
+    "selectors": [
+      "Area Majority / Influence"
+    ]
+  },
+  {
+    "category": "areaControl",
+    "selectors": [
+      "Territory Building",
+      "Fighting"
+    ]
+  },
+  {
+    "category": "areaControl",
+    "selectors": [
+      "Territory Building",
+      "Wargame"
+    ]
+  },
+  {
+    "category": "auction",
+    "selectors":[
+      "Auction / Bidding",
+      "Auction: Dutch Priority",
+      "Auction: English",
+      "Turn Order: Auction"
+    ]
+  },
+  {
+    "category": "cards",
+    "selectors": [
+      "Card Game"
+    ]
+  },
+  {
+    "category": "deckBuilding",
+    "selectors": [
+      "Deck, Bag, and Pool Building",
+      "Deck Construction"
+    ]
+  },
+  {
+    "category": "deduction",
+    "selectors": [
+      "Deduction",
+      "Pattern Recognition"
+    ]
+  },
+  {
+    "category": "drafting",
+    "selectors": [
+      "Closed Drafting",
+      "Open Drafting",
+      "Dice Drafting"
+    ]
+  },
+  {
+    "category": "dungeonCrawler",
+    "selectors": [
+      "Dungeon Crawler"
+    ]
+  },
+  {
+    "category": "networks",
+    "selectors": [
+      "Network and Route Building",
+      "Connections"
+    ]
+  },
+  {
+    "category": "party",
+    "selectors": [
+      "Party Game"
+    ]
+  },
+  {
+    "category": "rollAndWrite",
+    "selectors": [
+      "Mechanism: Roll-and-Write",
+      "Mechanism: Flip-and-Write"
+    ]
+  },
+  {
+    "category": "storytelling",
+    "selectors": [
+      "Storytelling",
+      "Role Playing"
+    ]
+  },
+  {
+    "category": "tilePlacement",
+    "selectors": [
+      "Pattern Building",
+      "Tile Placement",
+      "Grid Coverage"
+    ]
+  },
+  {
+    "category": "trading",
+    "selectors": [
+      "Trading",
+      "Negotiation"
+    ]
+  },
+  {
+    "category": "words",
+    "selectors": [
+      "Word Game"
+    ]
+  },
+  {
+    "category": "workerPlacement",
+    "selectors": [
+      "Worker Placement"
+    ]
+  }
+]

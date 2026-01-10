@@ -1,0 +1,126 @@
+[
+  {
+    "category": "adventure",
+    "selectors": [
+      "Adventure",
+      "Exploration"
+    ]
+  },
+  {
+    "category": "oldHistory",
+    "selectors": [
+      "Ancient",
+      "Medieval"
+    ]
+  },
+  {
+    "category": "animals",
+    "selectors": [
+      "Animals",
+      "Environmental",
+      "Prehistoric",
+      "Farming",
+      "Theme: Nature",
+      "Theme: Trees and Forests"
+    ]
+  },
+  {
+    "category": "arts",
+    "selectors": [
+      "Theme: Art",
+      "Theme: Fine Art and Art Museums",
+      "Theme: Painting / Paintings",
+      "Theme: Art style – Art Deco",
+      "Theme: Sewing / Knitting / Cloth-Making",
+      "Theme: Photography",
+      "Theme: Construction"
+    ]
+  },
+  {
+    "category": "economy-infrastructure",
+    "selectors": [
+      "Economic",
+      "City Building",
+      "Industry / Manufacturing",
+      "Civilization"
+    ]
+  },
+  {
+    "category": "fantasy",
+    "selectors": [
+      "Fantasy",
+      "Mythology",
+      "Superheroes"
+    ]
+  },
+  {
+    "category": "horror",
+    "selectors": [
+      "Horror",
+      "Zombies"
+    ]
+  },
+  {
+    "category": "murder",
+    "selectors": [
+      "Murder / Mystery",
+      "Theme: Mystery / Crime"
+    ]
+  },
+  {
+    "category": "politics",
+    "selectors": [
+      "Political",
+      "Spies / Secret Agents"
+    ]
+  },
+  {
+    "category": "newHistory",
+    "selectors": [
+      "Renaissance",
+      "Age of Reason",
+      "Napoleonic",
+      "Post-Napoleonic",
+      "American West"
+    ]
+  },
+  {
+    "category": "science",
+    "selectors": [
+      "Medical",
+      "Theme: Science",
+      "Theme: Alchemy",
+      "Theme: Mad Science / Mad Scientist"
+    ]
+  },
+  {
+    "category": "scifi",
+    "selectors": [
+      "Science Fiction",
+      "Space Exploration"
+    ]
+  },
+  {
+    "category": "nautical",
+    "selectors": [
+      "Nautical",
+      "Pirates"
+    ]
+  },
+  {
+    "category": "trains",
+    "selectors":[
+      "Racing",
+      "Trains",
+      "Aviation / Flight"
+    ]
+  },
+  {
+    "category": "war",
+    "selectors": [
+      "War",
+      "Fighting",
+      "Pike and Shot"
+    ]
+  }
+]

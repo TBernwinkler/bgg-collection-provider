@@ -1,5 +1,6 @@
 import numbers
 from datetime import datetime
+from typing import List
 
 
 class Game:
@@ -19,10 +20,15 @@ class Game:
         self.thumbnail = game_thumbnail
         self.languages = game_languages
         self.difficulty_category = 99 # arbitrary value in the original
+        self.year_published = -1
         self.release_group = 99
         self.playing_time_category = 99
         self.language_dependency_group = 99
         self.is_cooperative = -1 # 1=cooperative, 0=team-based; -1=competitive
+        self.recommended_player_numbers = []
+        self.game_mechanics = []
+        self.game_themes = []
+        self.descriptions = {'DE': '', 'EN': ''}
         # coop means conflict score = 1
         # todo: coop and conflict potential
 
@@ -34,11 +40,24 @@ class Game:
         except ValueError:
             return False
 
+    @staticmethod
+    def _is_integer(s):
+        try:
+            int(s)
+            return True
+        except ValueError:
+            return False
 
+    # As the function name indicates: Assigns a release year category to the game. It also
+    # saves the publishing year to the game entry, so it can be displayed in the web app.
+    # Based on originally arbitrary numbers, the category groups are in alignment with the
+    # quiz questions of the associated web app. The higher the number, the more recent the
+    # game was published.
     def set_release_year_group(self, release_year):
         # default: 99; to be ignored on the FE part
-        if self._is_number(release_year):
-            released = float(release_year)
+        if self._is_integer(release_year):
+            released = int(release_year)
+            self.year_published = released
             if (self.current_year - released) <= 2:
                 self.release_group = 2
             elif (self.current_year - released) <= 5:
@@ -51,11 +70,12 @@ class Game:
                 self.release_group = -2
 
 
-
+    # Same concept as for the release year group. In this function, the category for the
+    # time spent playing a particular game is set.
     def set_play_time_category(self, max_play_time):
         # default: 99 as above
-        if self._is_number(max_play_time):
-            play_time = float(max_play_time)
+        if self._is_integer(max_play_time):
+            play_time = int(max_play_time)
             if play_time < 45:
                 self.playing_time_category = 2
             elif play_time < 90:
@@ -67,7 +87,8 @@ class Game:
             else:
                 self.playing_time_category = -2
 
-
+    # After playing time, game "weight" / perceived difficulty is also categorized.
+    # Again, the categories are only relevant for the decisions made in the quiz.
     def set_difficulty_category(self, difficulty_rating):
         # default: 99 as above
         if self._is_number(difficulty_rating):
@@ -85,6 +106,8 @@ class Game:
 
 
     # again, using arbitrary numbers from the original project
+    # By subtracting the BGG value (between 0 and 4), you end up with a scale
+    # between 2 and -2 again
     def set_language_dependency(self, language_dependence):
         if self._is_number(language_dependence):
             self.language_dependency_group = 2 - int(language_dependence)
@@ -92,3 +115,14 @@ class Game:
 
     def set_cooperative_indicator(self, value: int):
         self.is_cooperative = value
+        # todo: if cooperative == 1 then conflict_level = 1
+
+    # Saves the list of all recommended numbers of player for a game to the object
+    def set_recommended_player_numbers(self, recommended: List[int]):
+        self.recommended_player_numbers = recommended
+
+    def set_game_mechanics(self, mechanics: List[str]):
+        self.game_mechanics = mechanics
+
+    def set_game_themes(self, themes: List[str]):
+        self.game_themes = themes

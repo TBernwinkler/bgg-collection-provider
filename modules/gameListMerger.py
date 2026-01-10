@@ -15,5 +15,7 @@ class LocationManager:
             for entry in collection_filters:
                 if entry.filterString == game.location:
                     game.location = entry.displayText
-                    updated_game_list.append(game)
+            # add all games, even if their filter is not found
+            # iterating all filters for every game is acceptable, as the number of filters is limited
+            updated_game_list.append(game)
         return updated_game_list
