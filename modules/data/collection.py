@@ -2,9 +2,10 @@ from typing import List
 from .game import Game
 
 class CollectionFilter:
-    def __init__(self, display_text: str, filter_string: str):
+    def __init__(self, display_text: str, filter_string: str, restricted: bool):
         self.displayText = display_text
         self.filterString = filter_string
+        self.restricted = restricted
 
 class CollectionConfig:
     def __init__(self, bgg_name: str, filters: List[CollectionFilter]):

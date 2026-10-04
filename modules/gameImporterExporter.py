@@ -1,7 +1,6 @@
 import json
 import os.path
 from typing import List
-
 import simplejson
 
 from modules.data.game import Game

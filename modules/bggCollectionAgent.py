@@ -1,5 +1,3 @@
-import json
-
 import requests
 import time
 import xmltodict
@@ -61,12 +59,3 @@ class BggCollectionAgent:
                           + 'id=' + game_ids
                           + '&stats=1')
         return self._make_bgg_request(request_string, connection.api_key)
-
-
-    # Retrieve the geek item in order to retrieve all game descriptions, ideally in DE and EN
-    # def request_geek_item(self, game_id: str, connection: ConnectionProperties):
-    #     request_string = (connection.server_address
-    #                       + self.internal_api_path + '?'
-    #                       + 'objectid=' + game_id
-    #                       + 'objecttype=thing')
-    #     return self._make_bgg_request(request_string, connection.ai_api_key)

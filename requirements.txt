@@ -5,3 +5,4 @@ glom
 deepl
 openai
 flask
+flask-cors

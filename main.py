@@ -1,8 +1,9 @@
+import logging
 from typing import List
 from datetime import datetime
 
-import openai
-from deepl import QuotaExceededException
+import deepl
+from deepl import QuotaExceededException, TextResult
 
 from modules.configLoader import ConfigLoader
 from modules.bggCollectionAgent import BggCollectionAgent
@@ -12,14 +13,11 @@ from modules.gameImporterExporter import GameImporterExporter
 from modules.gameListMerger import LocationManager
 from modules.data.collection import CollectionConfig, GameCollection
 from modules.data.connection import ConnectionProperties
-
-import deepl
-
 from modules.translationLibraryManager import TranslationLibraryManager
 
 
-# Reads json config files and transforms them into class objects for easier interaction.
-# This get the application ready for all subsequent tasks.
+# Reads JSON config files and transforms them into class objects for easier interaction.
+# This get the application ready for all subsequent tasks. 
 def initialize():
     loader = ConfigLoader()
     collection_config_list: List[CollectionConfig] = loader.read_collections_config()
@@ -98,6 +96,7 @@ def read_filter_categories():
 def standardize_descriptions(games: List[Game], connection: ConnectionProperties) -> List[Game]:
     deepl_client = deepl.DeepLClient(connection.api_key)
     library_file_path = 'translations/translationLibrary.json'
+    source_language_code = 'EN'
     target_language_code = 'DE'
     translation_lib_manager = TranslationLibraryManager(translation_library_file=library_file_path)
     translation_lib_manager.load_library()
@@ -105,20 +104,32 @@ def standardize_descriptions(games: List[Game], connection: ConnectionProperties
     reached_ai_quota = False
     for game in games:
         translation = translation_lib_manager.get_translation(game.id, target_language_code)
-        if translation == '' or translation_lib_manager.requires_modification(game.id, game.descriptions[target_language_code], target_language_code):
+        if translation == '' or translation_lib_manager.requires_modification(game.id, game.descriptions[source_language_code], target_language_code):
             if not reached_ai_quota:
                 try:
-                    translation = deepl_client.translate_text(game.descriptions.get('EN'), target_lang=target_language_code)
-                    print("Translated description for game: " + game.name)
+                    print("Attempting translation for game: " + game.name)
+                    logging.info("Attempting translation for game: " + game.name)
+                    translation_output = deepl_client.translate_text(game.descriptions.get(source_language_code), target_lang=target_language_code)
+                    translation = ''
+                    if isinstance(translation_output, list):
+                        translation = translation_output[0].text
+                    elif isinstance(translation_output, TextResult):
+                        translation = translation_output.text
+                    translation_lib_manager.add_translation(game.id, game.name, game.descriptions[source_language_code], translation, target_language_code)
                 except QuotaExceededException:
                     # write all changes to the library file; no further translations possible due to quota
                     translation_lib_manager.persist_library()
+                    logging.info('Reached translation AI quota after processing game: ' + game.name)
+                    print('Reached translation AI quota after processing game: ' + game.name)
                     reached_ai_quota = True
                 except TypeError:
-                    print('Translation error happened for [' + game.id + '] ' + game.name)
+                    print('Translation error happened for [' + game.id + '] ' + game.name + "\n" + game.descriptions[source_language_code])
+                    logging.info("Translation failed: " + game.name + "\n" + game.descriptions[source_language_code])
                     # write all changes to the library file; saves all successful translations
                     translation_lib_manager.persist_library()
-                translation_lib_manager.add_translation(game.id, game.name, game.descriptions['EN'], translation, target_language_code)
+                except Exception as e:
+                    logging.error('Encountered an error during the translation attempt for game [%s] with description [%s]. Exception: %s', game.name, game.descriptions[source_language_code], repr(e))
+                    translation_lib_manager.persist_library()
 
         if target_language_code == 'DE':
             game.descriptions.update(DE=translation)
@@ -126,36 +137,17 @@ def standardize_descriptions(games: List[Game], connection: ConnectionProperties
     return games
 
 
-# Currently not used
-def handle_chat_gpt_request(games: List[Game], connection: ConnectionProperties):
-    openai.api_key = connection.api_key
-    # iterate games, create a prompt
-    prompt = ""
-    # todo: magic
-    # response = openai.Completion.create(
-    #     model='text-davinci-003',
-    #     prompt=prompt
-    # )
-    #
-    # output = list()
-    # for item in response['choices']:
-    #     output.append(item['text'].strip())
-    # todo: do something with the output
-    return games
-
-# offer API section
-# TODO: implement the API to provide the JSON content from the file
-
 def main():
-    # (1) Reading config
+    # (1) Reading config files
     collection_config_list, connections_config_list = initialize()
     bgg_connection = get_connection(connections_config_list, 'BGG')
     # (2) Requesting BGG lists and processing data (select relevant information)
     collections: List[GameCollection] = []
     for collection in collection_config_list:
         print ("Processing BGG collection for username: " + collection.bgg_name)
-        game_collection_dict = retrieve_collection(collection.bgg_name, bgg_connection)
-        collections.append(GameCollection(collection_config=collection, games=process_raw_content(game_collection_dict)))
+        if bgg_connection:
+            game_collection_dict = retrieve_collection(collection.bgg_name, bgg_connection)
+            collections.append(GameCollection(collection_config=collection, games=process_raw_content(game_collection_dict)))
 
     # (3) Merging game lists and standardizing location strings
     merged_list = merge_game_lists(collections)
@@ -167,16 +159,17 @@ def main():
     #     filter criterion categories, and pre-defined classification
     game_list = aggregate_game_infos(merged_list, game_mechanics, game_themes, bgg_connection)
 
-
     # (6) standardize & translate game descriptions; involves LLMs (AI)
     deepl_connection = get_connection(connections_config_list, 'DeeplAI')
     standardize_descriptions(game_list, deepl_connection)
 
-    # (?) Write game list to a JSON file
-    # The output is used for the API; also serves for the purpose of testing/checking the final values
+    # (7) Write the game list to a JSON file
+    # The output is used for the API (collectionProviderApi.py)
+    # The file also serves for the purpose of testing/checking the final values
     exporter = GameImporterExporter('./game_lists/')
     today_date = datetime.today().strftime('%Y-%m-%d')
     exporter.write_game_file('Paradice-BGG-list-' + today_date + '.json', game_list)
 
 
+# ACTUAL EXECUTION
 main()

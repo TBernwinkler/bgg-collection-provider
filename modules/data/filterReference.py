@@ -1,7 +1,9 @@
 from typing import List
 
+### AS OF NOW, THESE FILTERS ARE STILL OUT OF SCOPE
+
 """
-The class is used the logical container for both
+The class is used as the logical container for both
 - game mechanics filter
 - game theme filter
 as the structure and way of processing are identical.

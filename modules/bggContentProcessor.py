@@ -1,4 +1,5 @@
 import json
+import logging
 from typing import List
 from glom import glom
 
@@ -6,11 +7,11 @@ from .data.filterReference import FilterReference
 from .data.game import Game
 
 
-
 class ContentProcessor:
     def __init__(self):
         self.root_keys = "items.item"
         self.optional = ["version", "thumbnail"]
+
 
     # Iterates through the raw BGG file and filters for the needed properties
     # Eventually creates a list with the properties that are really needed
@@ -46,19 +47,23 @@ class ContentProcessor:
                 if "comment" in item:
                     game_location = item["comment"]
 
+                game_types = []
+                for game_type in glom(item, "stats.rating.ranks.rank"):
+                    if '@type' in game_type and '@name' in game_type and game_type["@type"] == "family":
+                        game_types.append(game_type["@name"])
 
                 game = Game(game_id=item["@objectid"],
                             game_name=glom(item, "name.#text"),
-                            game_rating=float(glom(item, "stats.rating.bayesaverage.@value")),
+                            game_rating=float(glom(item, "stats.rating.average.@value")), # use the BGG depicted rating, rather than 'bayesaverage'
                             game_location=game_location,
                             game_min_players=int(min_players),
                             game_max_players=int(statistics["@maxplayers"]),
                             game_thumbnail=thumbnail,
-                            game_languages=languages)
+                            game_languages=languages,
+                            game_types=game_types)
 
                 # per default only "version" entries have weight
                 # Derive values based on categories
-
                 game_in_list = False
                 for list_entry in processed_game_list:
                     if list_entry.id == game.id:
@@ -66,6 +71,7 @@ class ContentProcessor:
                 if not game_in_list:
                     processed_game_list.append(game)
         return processed_game_list
+
 
     """
     This method takes all the poll results and evaluates them. As for all other values, the results are put in a range
@@ -82,12 +88,14 @@ class ContentProcessor:
         result_dict = { }
         iteration = 0
         for poll_result in poll_results['result']:
-            result_dict[str(2 - iteration)] = int(poll_result['@numvotes'])
+            # range from 1-5
+            result_dict[str(iteration+1)] = int(poll_result['@numvotes'])
             iteration+=1
         if max(result_dict.values()) <= 0:
-            return 99
+            return -1
         else:
             return max(result_dict, key=result_dict.get)
+
 
     """
     This method iterates through the community voting of "Best", "Recommended" and "Not Recommended" number of players
@@ -98,20 +106,24 @@ class ContentProcessor:
     def _get_recommended_player_numbers(player_number_votings, min_players: int, max_players: int):
         recommended_player_numbers = []
         for entry in player_number_votings:
-            for number in range(min_players, max_players+1):
-                if entry['@numplayers'] == str(number):
-                    best = 0
-                    recommended = 0
-                    avoid = 0
-                    for result in entry['result']:
-                        if result['@value'] == 'Best':
-                            best = int(result['@numvotes'])
-                        elif result['@value'] == 'Recommended':
-                            recommended = int(result['@numvotes'])
-                        else:
-                            avoid = int(result['@numvotes'])
-                    if best + recommended >= 2 * avoid:
-                        recommended_player_numbers.append(number)
+            try:
+                for number in range(min_players, max_players+1):
+                    if str(number) in str(entry['@numplayers']):
+                        best = 0
+                        recommended = 0
+                        avoid = 0
+                        for result in entry['result']:
+                            if result['@value'] == 'Best':
+                                best = int(result['@numvotes'])
+                            elif result['@value'] == 'Recommended':
+                                recommended = int(result['@numvotes'])
+                            else:
+                                avoid = int(result['@numvotes'])
+                        if best + recommended >= 2 * avoid:
+                            recommended_player_numbers.append(number)
+            except Exception as e:
+                logging.warning("A game has not received any player voting, yet.")
+                logging.error(e)
         return recommended_player_numbers
 
 
@@ -135,6 +147,32 @@ class ContentProcessor:
         return applicable_categories
 
 
+    @staticmethod
+    def _get_min_age(game_info):
+        if 'poll' in game_info:
+            for poll in game_info['poll']:
+                if '@name' in poll and poll['@name'] == 'suggested_playerage' and 'results' in poll and 'result' in poll['results']:
+                    max_value = 0
+                    min_age = -1
+                    poll_results = glom(poll, 'results.result')
+                    for poll_result in poll_results:
+                        try:
+                            votes = int(poll_result['@numvotes'])
+                            if poll_result['@value'] == '21 and up':
+                                age = 21
+                            else:
+                                age = int(poll_result['@value'])
+                            if votes > max_value:
+                                max_value = votes
+                                min_age = age
+                        except Exception as e:
+                            logging.error('Failed to get min mage from poll result (cast from string to number failed). Exception: %s', repr(e))
+                    return min_age
+        elif 'minage' in game_info and '@value' in game_info['minage']:
+            return glom(game_info, 'minage.@value')
+        return -1
+
+
     '''
     Batch information has been requested for a number of games. This information is now parsed
     and used to enrich the details of the existing game list. The original list is updated right
@@ -144,11 +182,13 @@ class ContentProcessor:
     def enrich_bulk_information(self, games: List[Game], bulk_infos,
                                 gameMechanics: List[FilterReference], gameThemes: List[FilterReference]):
         for game in games: # might have to iterate via index
+            logging.info(f'Processing data for game [{game.name}]')
             for item in glom(bulk_infos, self.root_keys):
                 if game.id == item['@id']:
                     game.set_release_year_group(glom(item, 'yearpublished.@value'))
                     game.set_play_time_category(glom(item, 'maxplaytime.@value'))
                     game.set_difficulty_category(glom(item, 'statistics.ratings.averageweight.@value'))
+                    game.min_age = self._get_min_age(item)
                     language_poll = {}
                     player_number_poll = {}
                     for poll_data in item['poll']:

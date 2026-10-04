@@ -40,7 +40,7 @@ class ConfigLoader:
         for entry in collection_json:
             filters: List[CollectionFilter] = []
             for entry_filter in entry.filters:
-                filters.append(CollectionFilter(display_text=entry_filter.displayText, filter_string=entry_filter.filterString))
+                filters.append(CollectionFilter(display_text=entry_filter.displayText, filter_string=entry_filter.filterString, restricted=entry_filter.membersOnly))
             collection_config_list.append(CollectionConfig(entry.bggName, filters))
         return  collection_config_list
 
@@ -60,8 +60,3 @@ class ConfigLoader:
         for entry in json_content:
             references.append(FilterReference(entry.category, entry.selectors))
         return references
-
-# test = ConfigLoader()
-# collections=test.read_collections_config()
-# connections=test.read_connections_config()
-# print(collections, connections)
