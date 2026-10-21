@@ -4,8 +4,11 @@ from datetime import datetime, timedelta
 import os.path
 import json
 
+from modules.validation.requestValidator import RequestValidator
+
 app = Flask(__name__)
-CORS(app, origins=["https://bgg.paradice.wien", "https://brettspielomat.paradice.wien"])
+validator = RequestValidator()
+CORS(app, origins=validator.get_allowed_origins())
 
 file_directory = 'game_lists'
 file_pattern = 'Paradice-BGG-list-'
@@ -28,25 +31,16 @@ def get_game_list() -> str:
     else:
         return '{ "Error": "Not files for the last 10 days." }'
 
-def get_auth() -> dict:
-    user = ''
-    password = ''
-    with open('basic-auth.conf', "r") as auth_file:
-        for line in auth_file:
-            if line.startswith('username'):
-                user = line.split('=')[1].strip()
-            elif line.startswith('password'):
-                password = line.split('=')[1].strip()
-        return { 'username': user.strip('"'), 'password': password.strip('"') }
-
 
 
 @app.get("/games")
 def get_games():
-    credentials = get_auth()
-    if (request.authorization and request.authorization.username == credentials['username']
-            and request.authorization.password == credentials['password']):
+    if validator.authorize(request):
         return jsonify(get_game_list())
     return make_response("Access denied.", 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
 
-app.run('0.0.0.0', 8081)
+# LOCAL
+# app.run('0.0.0.0', 8081)
+
+# SERVER
+app.run('0.0.0.0', 80)
