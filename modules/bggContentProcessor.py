@@ -87,14 +87,14 @@ class ContentProcessor:
     def _get_language_dependency(poll_results):
         result_dict = { }
         iteration = 0
-        for poll_result in poll_results['result']:
-            # range from 1-5
-            result_dict[str(iteration+1)] = int(poll_result['@numvotes'])
-            iteration+=1
-        if max(result_dict.values()) <= 0:
-            return -1
-        else:
-            return max(result_dict, key=result_dict.get)
+        if 'result' in poll_results:
+            for poll_result in poll_results['result']:
+                # range from 1-5
+                result_dict[str(iteration+1)] = int(poll_result['@numvotes'])
+                iteration+=1
+            if max(result_dict.values()) > 0:
+                return max(result_dict, key=result_dict.get)
+        return -1
 
 
     """
@@ -192,10 +192,13 @@ class ContentProcessor:
                     language_poll = {}
                     player_number_poll = {}
                     for poll_data in item['poll']:
-                        if poll_data['@name'] == 'language_dependence':
-                            language_poll = poll_data['results']
-                        elif poll_data['@name'] == 'suggested_numplayers':
-                            player_number_poll = poll_data['results']
+                        if 'results' in poll_data:
+                            if poll_data['@name'] == 'language_dependence':
+                                language_poll = poll_data['results']
+                            elif poll_data['@name'] == 'suggested_numplayers':
+                                player_number_poll = poll_data['results']
+                        else:
+                            logging.info('No results in poll_data for game: ', game.name)
                     game.language_dependency_group = self._get_language_dependency(language_poll)
                     game.set_recommended_player_numbers(self._get_recommended_player_numbers(player_number_poll, game.min_players, game.max_players))
                     game.set_cooperative_indicator(-1)
